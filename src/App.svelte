@@ -1,20 +1,51 @@
 <script>
   import Scroller from "@sveltejs/svelte-scroller";
-  import Title from "./component/Title.svelte";
+  import Title from "./components/Title.svelte";
   import { fade, fly } from "svelte/transition";
-  export let name;
+  import { onMount } from "svelte";
+  import { getPhotos } from "./services/network.js";
+  import { photos } from "./store/store.js";
+
   let count;
-  let index;
+  let index = 0;
   let offset;
   let progress;
+
+  let myPhotos;
+  let visible = true;
+  let animationOpt = { x: 200, duration: 2000 };
+  $: {
+    offset;
+    if (progress > 0.1) {
+      if (offset > 0.1 && offset < 0.9) {
+        visible = true;
+      } else {
+        visible = false;
+      }
+    }
+    if (index % 2 == 0) {
+      animationOpt = { x: 300, duration: 2000 }
+    } else {
+      animationOpt = { x: -300, duration: 2000 }
+    }
+  }
+  const unsubscribe = photos.subscribe(value => {
+    console.log("value subscribe", value);
+    myPhotos = value;
+    count = myPhotos.length;
+  });
+
+  onMount(async () => {
+    getPhotos();
+  });
 </script>
 
 <style>
   [slot="background"] {
     background-color: rgba(255, 62, 0, 0.05);
     font-size: 1.4em;
-	overflow: hidden;
-	height: 80vh;
+    overflow: hidden;
+    height: 80vh;
   }
 
   [slot="background"] p {
@@ -32,11 +63,11 @@
 
   .m_picture {
     height: 80vh;
-    background-color: rgba(0, 0, 0, 0.5);
+    background-color: rgba(0, 0, 0, 0.05);
     color: white;
     padding: 1em;
     margin: 0 0 2em 0;
-    width: 70%;
+    width: 75%;
   }
   [slot="foreground"] section:nth-child(odd) {
     justify-content: flex-end;
@@ -48,8 +79,8 @@
 
   .background_wrapper-right {
     display: flex;
-	justify-content: flex-end;
-	text-align: end;
+    justify-content: flex-end;
+    text-align: end;
   }
 
   .background_wrapper-left {
@@ -58,32 +89,63 @@
   }
 
   .background_content {
-    width: 30%;
+    width: 20%;
+    padding: 1em;
+  }
+
+  @media (max-width: 600px) {
+    .background_content {
+      display: none;
+    }
+    .m_picture {
+      width: 100%;
+    }
+  }
+
+  img {
+    /* object-fit: cover;  */
+    width: 100%;
+    height: 100%;
+  }
+
+  .m_picture-title {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    padding-bottom: 5px;
   }
 </style>
 
 <Title />
-<Scroller top={0.2} bottom={0.8} bind:index bind:offset bind:progress>
-
-  <div slot="background">
-    <div class={index % 2 == 0 ? 'background_wrapper-left' : 'background_wrapper-right'}>
-      <div class="background_content" in:fly="{{ y: 200, duration: 2000 }}" out:fade>
-        <h3>I am a title</h3>
-        <span>I am a date and location</span>
-        <p>Description {index + 1} is currently active.</p>
+{#if myPhotos}
+  <Scroller top={0.2} bottom={0.8} bind:index bind:offset bind:progress>
+    <div slot="background">
+      <div
+        class={index % 2 == 0 ? 'background_wrapper-left' : 'background_wrapper-right'}>
+        <div
+          class="background_content"
+          in:fly={{ y: 200, duration: 2000 }}
+          out:fade>
+          <p>{myPhotos[index].description}</p>
+        </div>
       </div>
     </div>
-  </div>
 
-  <div slot="foreground">
-    <section in:fly="{{ y: 200, duration: 2000 }}" out:fade>
-      <div class="m_picture">This is the first picture.</div>
-    </section>
-    <section>
-      <div class="m_picture">This is the second picture.</div>
-    </section>
-    <section>
-      <div class="m_picture">This is the third picture.</div>
-    </section>
-  </div>
-</Scroller>
+    <div slot="foreground">
+      {#each myPhotos as item}
+        <section>
+          <div class="m_picture">
+            {#if visible && myPhotos[index].name == item.name}
+              <div class="m_picture-title">
+                <span>{item.title}</span>
+                <span>{item.location}</span>
+              </div>
+              <img src={item.pictureUrl} alt={item.name} in:fly={animationOpt} out:fade/>
+            {/if}
+          </div>
+
+        </section>
+      {/each}
+    </div>
+  </Scroller>
+{/if}

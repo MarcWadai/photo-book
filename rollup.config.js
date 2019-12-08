@@ -3,6 +3,7 @@ import resolve from 'rollup-plugin-node-resolve';
 import commonjs from 'rollup-plugin-commonjs';
 import livereload from 'rollup-plugin-livereload';
 import { terser } from 'rollup-plugin-terser';
+import replace from '@rollup/plugin-replace';
 
 const production = !process.env.ROLLUP_WATCH;
 
@@ -15,6 +16,13 @@ export default {
 		file: 'public/build/bundle.js'
 	},
 	plugins: [
+		replace({
+			// you're right, you shouldn't be injecting this
+			// into a client script :)
+			AUTHUSER: process.env.AUTH_USER,
+			AUTHPASS: process.env.AUTH_PASS,
+			BASEURL: process.env.BASE_URL
+		}),
 		svelte({
 			// enable run-time checks when not in production
 			dev: !production,
@@ -24,7 +32,6 @@ export default {
 				css.write('public/build/bundle.css');
 			}
 		}),
-
 		// If you have external dependencies installed from
 		// npm, you'll most likely need these plugins. In
 		// some cases you'll need additional configuration —

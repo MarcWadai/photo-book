@@ -78,7 +78,7 @@
   .wrapper {
     position: relative;
     width: 100%;
-    height: 500px;
+    height: 100vh;
     display: flex;
     justify-content: center;
     align-items: center;
@@ -91,7 +91,7 @@
   #magugulines {
     position: absolute;
     width: 100%;
-    height: 500px;
+    height: 100vh;
   }
   .marcoucou {
     animation: marcoucou 10s ease-in-out infinite alternate;
