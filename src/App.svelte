@@ -30,7 +30,6 @@
     }
   }
   const unsubscribe = photos.subscribe(value => {
-    console.log("value subscribe", value);
     myPhotos = value;
     count = myPhotos.length;
   });
