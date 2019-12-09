@@ -5,6 +5,7 @@
   import { onMount } from "svelte";
   import { getPhotos } from "./services/network.js";
   import { photos } from "./store/store.js";
+  import { checkMobile } from "./services/utils.js";
 
   let count;
   let index = 0;
@@ -15,7 +16,7 @@
   let visible = true;
   let animationOpt = { x: 200, duration: 2000 };
   const loaded = new Map();
-
+  let isMobile;
   $: {
     offset;
     if (progress > 0.1) {
@@ -26,9 +27,9 @@
       }
     }
     if (index % 2 == 0) {
-      animationOpt = { x: 300, duration: 2000 }
+      animationOpt = { x: 300, duration: 2000 };
     } else {
-      animationOpt = { x: -300, duration: 2000 }
+      animationOpt = { x: -300, duration: 2000 };
     }
   }
   const unsubscribe = photos.subscribe(value => {
@@ -36,30 +37,31 @@
     count = myPhotos.length;
   });
 
+  function lazy(node, data) {
+    if (loaded.has(data.src)) {
+      node.setAttribute("src", data.src);
+    } else {
+      // simulate slow loading network
+      setTimeout(() => {
+        const img = new Image();
+        img.src = data.src;
+        img.onload = () => {
+          loaded.set(data.src, img);
+          node.setAttribute("src", data.src);
+        };
+      }, 2000);
+    }
 
-	function lazy(node, data) {
-		if (loaded.has(data.src)) {
-			node.setAttribute('src', data.src);
-		} else {
-			// simulate slow loading network
-			setTimeout(() => {
-				const img = new Image();
-				img.src = data.src;
-				img.onload = () => {
-					loaded.set(data.src, img);
-					node.setAttribute('src', data.src); 
-				};
-			}, 2000);
-		}
-
-		return {
-			destroy(){} // noop
-		};
-	}
-
+    return {
+      destroy() {} // noop
+    };
+  }
 
   onMount(async () => {
     getPhotos();
+    const isMobile = checkMobile(
+      navigator.userAgent || navigator.vendor || window.opera
+    );
   });
 </script>
 
@@ -137,37 +139,68 @@
     justify-content: space-between;
     padding-bottom: 5px;
   }
+
+  .text_mobile {
+    width: 100%;
+    text-align: center;
+  }
 </style>
+
+<svelte:window on:mobilecheck={checkMobile} />
 
 <Title />
 {#if myPhotos}
-  <Scroller top={0.2} bottom={0.8} bind:index bind:offset bind:progress>
-    <div slot="background">
-      <div
-        class={index % 2 == 0 ? 'background_wrapper-left' : 'background_wrapper-right'}>
+  {#if isMobile}
+    <Scroller top={0.2} bottom={0.8} bind:index bind:offset bind:progress>
+      <div slot="background">
         <div
-          class="background_content"
-          out:fade>
-          <p>{myPhotos[index].description}</p>
+          class={index % 2 == 0 ? 'background_wrapper-left' : 'background_wrapper-right'}>
+          <div class="background_content" out:fade>
+            <p>{myPhotos[index].description}</p>
+          </div>
         </div>
       </div>
-    </div>
 
-    <div slot="foreground">
-      {#each myPhotos as item}
-        <section>
-          <div class="m_picture">
-            {#if visible && myPhotos[index].name == item.name}
-              <div class="m_picture-title">
-                <span>{item.title}</span>
-                <span>{item.location}</span>
-              </div>
-              <img src="https://picsum.photos/id/202/300/200?blur=5&grayscale" use:lazy="{{src: item.pictureUrl}}" alt={item.name} in:fly={animationOpt} out:fade
-              />
-            {/if}
-          </div>
-        </section>
-      {/each}
-    </div>
-  </Scroller>
+      <div slot="foreground">
+        {#each myPhotos as item}
+          <section>
+            <div class="m_picture">
+              {#if visible && myPhotos[index].name == item.name}
+                <div class="m_picture-title">
+                  <span>{item.title}</span>
+                  <span>{item.location}</span>
+                </div>
+                <img
+                  src="https://picsum.photos/id/202/300/200?blur=5&grayscale"
+                  use:lazy={{ src: item.pictureUrl }}
+                  alt={item.name}
+                  in:fly={animationOpt}
+                  out:fade />
+              {/if}
+            </div>
+          </section>
+        {/each}
+      </div>
+    </Scroller>
+  {:else}
+  <p class="text_mobile"> For better experience check out on Desktop :D</p>
+    {#each myPhotos as item}
+      <section>
+        <div class="m_picture">
+          {#if visible}
+            <div class="m_picture-title">
+              <span>{item.title}</span>
+              <span>{item.location}</span>
+            </div>
+            <img
+              src="https://picsum.photos/id/202/300/200?blur=5&grayscale"
+              use:lazy={{ src: item.pictureUrl }}
+              alt={item.name}
+              in:fly={animationOpt}
+              out:fade />
+          {/if}
+        </div>
+      </section>
+    {/each}
+  {/if}
 {/if}
