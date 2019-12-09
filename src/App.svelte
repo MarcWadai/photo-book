@@ -14,6 +14,8 @@
   let myPhotos;
   let visible = true;
   let animationOpt = { x: 200, duration: 2000 };
+  const loaded = new Map();
+
   $: {
     offset;
     if (progress > 0.1) {
@@ -33,6 +35,28 @@
     myPhotos = value;
     count = myPhotos.length;
   });
+
+
+	function lazy(node, data) {
+		if (loaded.has(data.src)) {
+			node.setAttribute('src', data.src);
+		} else {
+			// simulate slow loading network
+			setTimeout(() => {
+				const img = new Image();
+				img.src = data.src;
+				img.onload = () => {
+					loaded.set(data.src, img);
+					node.setAttribute('src', data.src); 
+				};
+			}, 2000);
+		}
+
+		return {
+			destroy(){} // noop
+		};
+	}
+
 
   onMount(async () => {
     getPhotos();
@@ -123,7 +147,6 @@
         class={index % 2 == 0 ? 'background_wrapper-left' : 'background_wrapper-right'}>
         <div
           class="background_content"
-          in:fly={{ y: 200, duration: 2000 }}
           out:fade>
           <p>{myPhotos[index].description}</p>
         </div>
@@ -139,10 +162,10 @@
                 <span>{item.title}</span>
                 <span>{item.location}</span>
               </div>
-              <img src={item.pictureUrl} alt={item.name} in:fly={animationOpt} out:fade/>
+              <img src="https://picsum.photos/id/202/300/200?blur=5&grayscale" use:lazy="{{src: item.pictureUrl}}" alt={item.name} in:fly={animationOpt} out:fade
+              />
             {/if}
           </div>
-
         </section>
       {/each}
     </div>
