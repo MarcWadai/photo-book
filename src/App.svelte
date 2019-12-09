@@ -19,7 +19,7 @@
   $: {
     offset;
     if (progress > 0.1) {
-      if (offset > 0.1 && offset < 0.9) {
+      if (offset > 0 && offset < 0.99) {
         visible = true;
       } else {
         visible = false;
