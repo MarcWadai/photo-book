@@ -16,7 +16,7 @@
   let visible = true;
   let animationOpt = { x: 200, duration: 2000 };
   const loaded = new Map();
-  let isMobile;
+  let isMobile = false;
   $: {
     offset;
     if (progress > 0.1) {
@@ -59,7 +59,7 @@
 
   onMount(async () => {
     getPhotos();
-    const isMobile = checkMobile(
+    isMobile = checkMobile(
       navigator.userAgent || navigator.vendor || window.opera
     );
   });
@@ -150,7 +150,7 @@
 
 <Title />
 {#if myPhotos}
-  {#if isMobile}
+  {#if !isMobile}
     <Scroller top={0.2} bottom={0.8} bind:index bind:offset bind:progress>
       <div slot="background">
         <div
