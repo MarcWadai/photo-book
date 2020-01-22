@@ -1,64 +1,71 @@
 <script>
-  import Scroller from "@sveltejs/svelte-scroller";
   import Title from "./components/Title.svelte";
+  import FooterMenu from "./components/FooterMenu.svelte";
+  import MyScroller from "./components/MyScroller.svelte";
+  import MyScroller1 from "./components/MyScroller.svelte";
+  import MyScroller2 from "./components/MyScroller.svelte";
+  import Loading from "./components/Loading.svelte";
   import { fade, fly } from "svelte/transition";
   import { onMount } from "svelte";
-  import { getPhotos } from "./services/network.js";
-  import { photos } from "./store/store.js";
+  import { photos, loading, error, selectedYear } from "./store/store.js";
   import { checkMobile } from "./services/utils.js";
 
-  let count;
-  let index = 0;
-  let offset;
-  let progress;
-
-  let myPhotos;
+  let myPhotos = [];
   let visible = true;
   let animationOpt = { x: 200, duration: 2000 };
   const loaded = new Map();
   let isMobile = false;
-  $: {
-    offset;
-    if (progress > 0.1) {
-      if (offset > 0 && offset < 0.99) {
-        visible = true;
-      } else {
-        visible = false;
-      }
+  let isLoading = false;
+  let isError = false;
+  let selected = {};
+  let year;
+  let previousYear;
+
+  selectedYear.subscribe(value => {
+    previousYear = year;
+    year = value;
+    if (!selected[value]) {
+      selected[value] = MyScroller;
     }
-    if (index % 2 == 0) {
-      animationOpt = { x: 300, duration: 2000 };
-    } else {
-      animationOpt = { x: -300, duration: 2000 };
+  })
+
+  photos.subscribe(value => {
+    if (value) {
+      myPhotos = [...value];
     }
-  }
-  const unsubscribe = photos.subscribe(value => {
-    myPhotos = value;
-    count = myPhotos.length;
   });
 
-  function lazy(node, data) {
-    if (loaded.has(data.src)) {
-      node.setAttribute("src", data.src);
-    } else {
-      // simulate slow loading network
-      setTimeout(() => {
-        const img = new Image();
-        img.src = data.src;
-        img.onload = () => {
-          loaded.set(data.src, img);
-          node.setAttribute("src", data.src);
-        };
-      }, 2000);
+  loading.subscribe(value => {
+    try {
+      isLoading = value;
+      const elmnt = document.getElementById("myloader");
+      if (value || isError) {
+        if (!myPhotos) {
+          const headerOffset = 50;
+          const elementPosition = elmnt.getBoundingClientRect().top;
+          var offsetPosition = elementPosition + headerOffset;
+          window.scrollTo({
+            top: offsetPosition,
+            behavior: "smooth"
+          });
+        } else {
+          elmnt.scrollIntoView({ behavior: "smooth" }); // Top
+        }
+      } else {
+        if (elmnt) {
+          elmnt.scrollIntoView({ behavior: "smooth" }); // Top
+        }
+      }
+    } catch (err) {
+      console.error(err);
     }
+  });
 
-    return {
-      destroy() {} // noop
-    };
-  }
+  error.subscribe(value => {
+    isError = value;
+  });
 
-  onMount(async () => {
-    getPhotos();
+  onMount(() => {
     isMobile = checkMobile(
       navigator.userAgent || navigator.vendor || window.opera
     );
@@ -66,141 +73,62 @@
 </script>
 
 <style>
-  [slot="background"] {
-    background-color: rgba(255, 62, 0, 0.05);
-    font-size: 1.4em;
-    overflow: hidden;
-    height: 80vh;
-  }
-
-  [slot="background"] p {
-    margin: 0;
-  }
-
-  [slot="foreground"] {
-    pointer-events: none;
-  }
-
-  [slot="foreground"] section {
-    display: flex;
-    width: 100%;
-  }
-
-  .m_picture {
-    height: 80vh;
-    background-color: rgba(0, 0, 0, 0.05);
-    color: white;
-    padding: 1em;
-    margin: 0 0 2em 0;
-    width: 75%;
-  }
-  [slot="foreground"] section:nth-child(odd) {
-    justify-content: flex-end;
-  }
-
-  [slot="foreground"] section:nth-child(even) {
-    justify-items: flex-start;
-  }
-
-  .background_wrapper-right {
-    display: flex;
-    justify-content: flex-end;
-    text-align: end;
-  }
-
-  .background_wrapper-left {
-    display: flex;
-    justify-content: flex-start;
-  }
-
-  .background_content {
-    width: 20%;
-    padding: 1em;
-  }
-
-  @media (max-width: 600px) {
-    .background_content {
-      display: none;
-    }
-    .m_picture {
-      width: 100%;
-    }
-  }
-
-  img {
-    /* object-fit: cover;  */
-    width: 100%;
-    height: 100%;
-  }
-
-  .m_picture-title {
-    display: flex;
-    flex-direction: row;
-    justify-content: space-between;
-    padding-bottom: 5px;
-  }
-
   .text_mobile {
     width: 100%;
     text-align: center;
+  }
+
+  .load {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 400px;
   }
 </style>
 
 <svelte:window on:mobilecheck={checkMobile} />
 
 <Title />
-{#if myPhotos}
-  {#if !isMobile}
-    <Scroller top={0.2} bottom={0.8} bind:index bind:offset bind:progress>
-      <div slot="background">
-        <div
-          class={index % 2 == 0 ? 'background_wrapper-left' : 'background_wrapper-right'}>
-          <div class="background_content" out:fade>
-            <p>{myPhotos[index].description}</p>
-          </div>
-        </div>
-      </div>
-
-      <div slot="foreground">
-        {#each myPhotos as item}
-          <section>
-            <div class="m_picture">
-              {#if visible && myPhotos[index].name == item.name}
-                <div class="m_picture-title">
-                  <span>{item.title}</span>
-                  <span>{item.location}</span>
-                </div>
-                <img
-                  src="https://picsum.photos/id/202/300/200?blur=5&grayscale"
-                  use:lazy={{ src: item.pictureUrl }}
-                  alt={item.name}
-                  in:fly={animationOpt}
-                  out:fade />
-              {/if}
-            </div>
-          </section>
-        {/each}
-      </div>
-    </Scroller>
-  {:else}
-  <p class="text_mobile"> For better experience check out on Desktop :D</p>
-    {#each myPhotos as item}
-      <section>
-        <div class="m_picture">
-          {#if visible}
-            <div class="m_picture-title">
-              <span>{item.title}</span>
-              <span>{item.location}</span>
-            </div>
-            <img
-              src="https://picsum.photos/id/202/300/200?blur=5&grayscale"
-              use:lazy={{ src: item.pictureUrl }}
-              alt={item.name}
-              in:fly={animationOpt}
-              out:fade />
-          {/if}
-        </div>
-      </section>
-    {/each}
-  {/if}
+<div id="myloader" />
+{#if isError}
+  <div class="load">An error has occured sorry :/</div>
 {/if}
+
+{#if isLoading}
+  <div class="load">
+    <Loading />
+  </div>
+{/if}
+
+{#if myPhotos.length}
+  <MyScroller {myPhotos}/>
+{/if}
+
+{#if isMobile}
+  <p class="text_mobile">For better experience check out on Desktop :D</p>
+
+  {#each myPhotos as { title, location, pictureUrl, name }}
+    <section>
+      <div class="m_picture">
+        {#if visible}
+          <div class="m_picture-title">
+            <span>{title}</span>
+            <span>{location}</span>
+          </div>
+          <img
+            src={pictureUrl}
+            alt={name}
+            in:fly={animationOpt}
+            out:fade />
+        {/if}
+      </div>
+    </section>
+  {/each}
+{/if}
+<!-- 
+{#if myPhotos && !myPhotos.length}
+  <div class="load">No pictures found for this year</div>
+{/if} -->
+
+<FooterMenu />

@@ -65,7 +65,6 @@
   }
 
   function social() {
-    console.log("im social");
   }
   onMount(async () => {
     generateLines();
