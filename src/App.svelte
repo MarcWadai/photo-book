@@ -2,8 +2,8 @@
   import Title from "./components/Title.svelte";
   import FooterMenu from "./components/FooterMenu.svelte";
   import MyScroller from "./components/MyScroller.svelte";
-  import MyScroller1 from "./components/MyScroller.svelte";
-  import MyScroller2 from "./components/MyScroller.svelte";
+  import MyScrollerMobile from "./components/MyScrollerMobile.svelte";
+  
   import Loading from "./components/Loading.svelte";
   import { fade, fly } from "svelte/transition";
   import { onMount } from "svelte";
@@ -101,34 +101,16 @@
   </div>
 {/if}
 
-{#if myPhotos.length}
+{#if myPhotos.length && !isMobile}
   <MyScroller {myPhotos}/>
 {/if}
 
-{#if isMobile}
-  <p class="text_mobile">For better experience check out on Desktop :D</p>
-
-  {#each myPhotos as { title, location, pictureUrl, name }}
-    <section>
-      <div class="m_picture">
-        {#if visible}
-          <div class="m_picture-title">
-            <span>{title}</span>
-            <span>{location}</span>
-          </div>
-          <img
-            src={pictureUrl}
-            alt={name}
-            in:fly={animationOpt}
-            out:fade />
-        {/if}
-      </div>
-    </section>
-  {/each}
+{#if myPhotos.length && isMobile}
+  <MyScrollerMobile {myPhotos}/>
 {/if}
-<!-- 
+
 {#if myPhotos && !myPhotos.length}
   <div class="load">No pictures found for this year</div>
-{/if} -->
+{/if}
 
 <FooterMenu />
