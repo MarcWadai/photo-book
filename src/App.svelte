@@ -109,7 +109,7 @@
   <MyScrollerMobile {myPhotos}/>
 {/if}
 
-{#if myPhotos && !myPhotos.length}
+{#if myPhotos && !myPhotos.length && year}
   <div class="load">No pictures found for this year</div>
 {/if}
 
